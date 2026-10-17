@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>cmd 2</title>
+    <style>
+        body {
+            background-color: black;
+            color: #cccccc;
+            font-family: Consolas, "Lucida Console", "Courier New", monospace;
+            font-size: 14px;
+            margin: 0;
+            padding: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #output {
+            margin-bottom: 5px;
+        }
+        .input-line {
+            display: flex;
+        }
+        .prompt {
+            margin-right: 5px;
+        }
+        #cmd-input {
+            background: transparent;
+            border: none;
+            color: #cccccc;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            flex: 1;
+            padding: 0;
+            margin: 0;
+        }
+        #embed-frame {
+            display: none;
+            width: 100%;
+            height: 90vh;
+            border: 1px solid #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="output"></div>
+    <div class="input-line" id="input-container">
+        <span class="prompt">Enter command [type "help" for a list of commands]: </span>
+        <input type="text" id="cmd-input" autofocus autocomplete="off" spellcheck="false">
+    </div>
+    <iframe id="embed-frame"></iframe>
+
+    <script>
+        const output = document.getElementById('output');
+        const cmdInput = document.getElementById('cmd-input');
+        const inputContainer = document.getElementById('input-container');
+        const embedFrame = document.getElementById('embed-frame');
+
+        let state = 'IDLE'; // 'IDLE', 'WAITING_PAUSE', 'WAITING_EMBED_CONFIRM', 'EMBEDDED'
+        let pendingAction = null;
+        let targetUrl = '';
+
+        function appendText(text) {
+            output.innerText += text + '\n';
+        }
+
+        function triggerPauseAction() {
+            if (pendingAction === 'exit') {
+                window.location.href = 'about:blank';
+            } else if (pendingAction === 'refresh') {
+                window.location.reload();
+            }
+        }
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const command = cmdInput.value.trim();
+                appendText(`Enter command [type "help" for a list of commands]: ${command}`);
+                cmdInput.value = '';
+
+                const parts = command.split(' ');
+                const lowerCmd = parts[0].toLowerCase();
+
+                if (lowerCmd === 'exit') {
+                    appendText('goodbye');
+                    appendText('Press any key to continue . . .');
+                    inputContainer.style.display = 'none';
+                    setTimeout(() => { 
+                        state = 'WAITING_PAUSE';
+                        pendingAction = 'exit'; 
+                    }, 50);
+                } else if (lowerCmd === 'help') {
+                    appendText('LIST OF COMMANDS');
+                    appendText('help: give a list of commands');
+                    appendText('exit: close cmd 2');
+                    appendText('embed <website>: embed a website');
+                    appendText('thats it press any key to reset');
+                    appendText('Press any key to continue . . .');
+                    inputContainer.style.display = 'none';
+                    setTimeout(() => { 
+                        state = 'WAITING_PAUSE';
+                        pendingAction = 'refresh'; 
+                    }, 50);
+                } else if (lowerCmd === 'embed') {
+                    if (parts.length < 2) {
+                        appendText('invalid command try again');
+                        appendText('Press any key to continue . . .');
+                        inputContainer.style.display = 'none';
+                        setTimeout(() => { 
+                            state = 'WAITING_PAUSE';
+                            pendingAction = 'refresh'; 
+                        }, 50);
+                    } else {
+                        let url = parts.slice(1).join(' ');
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            url = 'https://' + url;
+                        }
+                        targetUrl = url;
+                        appendText('WARNING: Some sites cannot be embedded.');
+                        appendText('Press "s" to stop embedding, or press any other key to continue . . .');
+                        inputContainer.style.display = 'none';
+                        setTimeout(() => { 
+                            state = 'WAITING_EMBED_CONFIRM';
+                        }, 50);
+                    }
+                } else {
+                    appendText('invalid command try again');
+                    appendText('Press any key to continue . . .');
+                    inputContainer.style.display = 'none';
+                    setTimeout(() => { 
+                        state = 'WAITING_PAUSE';
+                        pendingAction = 'refresh'; 
+                    }, 50);
+                }
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (state === 'WAITING_PAUSE') {
+                triggerPauseAction();
+            } else if (state === 'WAITING_EMBED_CONFIRM') {
+                if (e.key.toLowerCase() === 's') {
+                    window.location.reload();
+                } else {
+                    embedFrame.src = targetUrl;
+                    embedFrame.style.display = 'block';
+                    appendText('\nEmbedding website... (Press "s" to stop embedding and refresh)');
+                    state = 'EMBEDDED';
+                }
+            } else if (state === 'EMBEDDED') {
+                if (e.key.toLowerCase() === 's') {
+                    window.location.reload();
+                }
+            }
+        });
+
+        document.addEventListener('click', function() {
+            if (state === 'IDLE') {
+                cmdInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

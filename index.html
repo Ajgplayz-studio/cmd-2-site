@@ -96,6 +96,7 @@
                     appendText('help: give a list of commands');
                     appendText('exit: close cmd 2');
                     appendText('embed <website>: embed a website');
+                    appendText('open <website>: open a website in a new tab');
                     appendText('thats it press any key to reset');
                     appendText('Press any key to continue . . .');
                     inputContainer.style.display = 'none';
@@ -124,6 +125,23 @@
                         setTimeout(() => { 
                             state = 'WAITING_EMBED_CONFIRM';
                         }, 50);
+                    }
+                } else if (lowerCmd === 'open') {
+                    if (parts.length < 2) {
+                        appendText('invalid command try again');
+                        appendText('Press any key to continue . . .');
+                        inputContainer.style.display = 'none';
+                        setTimeout(() => { 
+                            state = 'WAITING_PAUSE';
+                            pendingAction = 'refresh'; 
+                        }, 50);
+                    } else {
+                        let url = parts.slice(1).join(' ');
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            url = 'https://' + url;
+                        }
+                        window.open(url, '_blank');
+                        appendText(`Opening ${url} in a new tab...`);
                     }
                 } else {
                     appendText('invalid command try again');
